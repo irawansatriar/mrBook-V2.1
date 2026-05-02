@@ -1,5 +1,5 @@
 {
-  "name": "mrBook-V2.0",
+  "name": "mrBook-V2.1",
   "version": "1.0.0",
   "start": "node server.js",
   "install": "npm rebuild sqlite3",
