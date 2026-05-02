@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Room Booking</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <!-- Header -->
+	<header class="bg-white border-b sticky top-0 z-10 px-4 py-6 flex flex-col items-center justify-center text-center">
+		<!-- Logo -->
+		<a href="index.html" class="inline-block">
+			<img src="zte_logo.png" alt="Logo" class="mb-4 h-16 w-auto object-contain">
+		</a>
+		
+		<!-- Title Section -->
+		<h1 class="text-2xl font-black text-slate-800 leading-tight">UM BTS Office</h1>
+		<h1 id="roomTitle" class="text-lg font-bold text-blue-600 uppercase tracking-tight">Loading Room...</h1>
+	</header>
+
+    <main class="max-w-md mx-auto p-4">
+        <!-- Month Selector -->
+        <div class="flex justify-between items-center mb-4 bg-white p-2 rounded-lg shadow-sm">
+            <button onclick="changeMonth(-1)" class="p-2 hover:bg-slate-100 rounded"><i class="fa-solid fa-chevron-left"></i></button>
+            <span id="currentMonthYear" class="font-bold text-blue-600">May 2026</span>
+            <button onclick="changeMonth(1)" class="p-2 hover:bg-slate-100 rounded"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+
+        <!-- Calendar Header (Monday to Sunday) -->
+        <div class="grid grid-cols-7 gap-px text-center mb-1">
+            <div class="py-2 text-[10px] font-black text-slate-400">MON</div>
+            <div class="py-2 text-[10px] font-black text-slate-400">TUE</div>
+            <div class="py-2 text-[10px] font-black text-slate-400">WED</div>
+            <div class="py-2 text-[10px] font-black text-slate-400">THU</div>
+            <div class="py-2 text-[10px] font-black text-slate-400">FRI</div>
+            <div class="py-2 text-[10px] font-black text-blue-400">SAT</div>
+            <div class="py-2 text-[10px] font-black text-red-400">SUN</div>
+        </div>
+
+        <!-- Calendar Grid -->
+        <div id="calendarGrid" class="grid grid-cols-7 gap-1"></div>
+    </main>
+
+    <!-- Date Detail & Booking Pop-up -->
+    <div id="dateModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-4">
+        <div class="bg-white w-full max-w-md rounded-t-2xl sm:rounded-2xl shadow-2xl overflow-hidden">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 id="selectedDateLabel" class="font-bold text-slate-800">12 May 2026</h3>
+                <button onclick="closeModal()" class="text-slate-400 text-xl">&times;</button>
+            </div>
+            
+            <div class="p-4 max-h-[70vh] overflow-y-auto">
+                <div class="mb-6">
+                    <h4 class="text-xs font-bold text-slate-400 uppercase mb-2">Existing Bookings</h4>
+                    <div id="dailyBookings" class="space-y-2"></div>
+                </div>
+
+                <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                    <h4 class="text-xs font-bold text-blue-600 uppercase mb-3">New Reservation</h4>
+                    <form id="bookingForm" class="space-y-3">
+                        <input type="text" id="userName" placeholder="Your Name" class="w-full p-3 rounded-lg border-none ring-1 ring-slate-200 outline-none" required>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 px-1">START</label>
+                                <input type="time" id="startTime" class="w-full p-2 rounded-lg border-none ring-1 ring-slate-200" required>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-bold text-slate-500 px-1">END</label>
+                                <input type="time" id="endTime" class="w-full p-2 rounded-lg border-none ring-1 ring-slate-200" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">Confirm Booking</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const roomId = urlParams.get('id');
+    let currentDate = new Date(); // Using a single Date object for cleaner month navigation
+    let selectedDateStr = '';
+
+    // Initialize Room Title
+// Replace the "Initialize Room Title" section with this:
+async function loadRoomName() {
+    try {
+        const res = await fetch('/api/rooms');
+        const rooms = await res.json();
+        // Find the specific room name from the list
+        const currentRoom = rooms.find(r => r.id == roomId); 
+        
+        if (currentRoom) {
+            document.getElementById('roomTitle').innerText = currentRoom.name;
+        } else {
+            document.getElementById('roomTitle').innerText = 'Unknown Room';
+        }
+    } catch (err) {
+        console.error("Error fetching room name:", err);
+    }
+}
+
+if(roomId) {
+    loadRoomName();
+}
+
+
+
+    async function renderCalendar() {
+        const grid = document.getElementById('calendarGrid');
+        const monthLabel = document.getElementById('currentMonthYear');
+        if(!grid || !roomId) return;
+        
+        grid.innerHTML = '';
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+
+        // Update Label
+        const monthNames = ["January", "February", "March", "April", "May", "June",
+            "July", "August", "September", "October", "November", "December"];
+        monthLabel.innerText = `${monthNames[month]} ${year}`;
+
+        // Monday to Sunday Logic
+        let firstDay = new Date(year, month, 1).getDay(); // Sun=0, Mon=1
+        let emptySlots = firstDay === 0 ? 6 : firstDay - 1; 
+
+        for (let i = 0; i < emptySlots; i++) {
+            grid.innerHTML += `<div class="aspect-square bg-slate-50/50 border border-slate-100 rounded-lg"></div>`;
+        }
+
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            
+            // Optimization: We can't await inside a loop efficiently, but for a single room calendar it works.
+            const res = await fetch(`/api/bookings/daily?room_id=${roomId}&date=${dateStr}`);
+            const bookings = await res.json();
+
+            const cell = document.createElement('button');
+            cell.className = "aspect-square bg-white border border-slate-100 flex flex-col items-center justify-center rounded-lg shadow-sm hover:bg-blue-50 transition-colors relative";
+            cell.innerHTML = `
+                <span class="text-sm font-semibold ${bookings.length > 0 ? 'text-blue-600' : 'text-slate-700'}">${day}</span>
+                ${bookings.length > 0 ? `<div class="absolute bottom-1 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>` : ''}
+            `;
+            cell.onclick = () => openDateDetail(dateStr);
+            grid.appendChild(cell);
+        }
+    }
+
+async function openDateDetail(dateStr) {
+    selectedDateStr = dateStr;
+    const displayDate = new Date(dateStr).toLocaleDateString('en-GB', { 
+        day: 'numeric', month: 'long', year: 'numeric' 
+    });
+    
+    document.getElementById('selectedDateLabel').innerText = displayDate;
+    document.getElementById('dateModal').classList.remove('hidden');
+    
+    const list = document.getElementById('dailyBookings');
+    list.innerHTML = '<p class="text-sm text-slate-400 italic">Loading...</p>';
+
+    try {
+        const res = await fetch(`/api/bookings/daily?room_id=${roomId}&date=${dateStr}`);
+        const bookings = await res.json();
+        
+        list.innerHTML = bookings.length > 0 
+            ? bookings.map(b => {
+                // Logic: Extract only the HH:mm part from the string
+                // Works for "2026-05-12T09:00" or "2026-05-12 09:00"
+                const sTime = b.start_time.split(/[T ]/)[1] || b.start_time;
+                const eTime = b.end_time.split(/[T ]/)[1] || b.end_time;
+
+                return `
+                    <div class="flex items-center justify-between p-3 bg-white rounded-xl border border-slate-100 shadow-sm mb-2">
+                        <div class="flex flex-col">
+                            <span class="text-[10px] font-black text-blue-600 uppercase tracking-wider mb-1">Booked by</span>
+                            <p class="text-sm font-bold text-slate-800">${b.user_name}</p>
+                            
+                            <div class="flex items-center gap-2 mt-1">
+                                <span class="text-[10px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded font-mono">
+                                    ${sTime}
+                                </span>
+                                <span class="text-slate-300">→</span>
+                                <span class="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-mono font-bold">
+                                    ${eTime}
+                                </span>
+                            </div>
+                        </div>
+                        <i class="fa-solid fa-clock text-slate-300"></i>
+                    </div>
+                `;
+            }).join('')
+            : '<div class="text-center py-6"><p class="text-sm text-slate-400 italic">No bookings for this day.</p></div>';
+    } catch (err) {
+        list.innerHTML = '<p class="text-sm text-red-400">Error loading bookings.</p>';
+    }
+}
+
+    document.getElementById('bookingForm').onsubmit = async (e) => {
+        e.preventDefault();
+        
+        const payload = {
+            room_id: parseInt(roomId),
+            user_name: document.getElementById('userName').value,
+            start_time: `${selectedDateStr}T${document.getElementById('startTime').value}`,
+            end_time: `${selectedDateStr}T${document.getElementById('endTime').value}`
+        };
+
+        try {
+            const res = await fetch('/api/bookings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            const result = await res.json();
+
+            if (result.success) {
+                alert('Booking Confirmed!');
+					closeModal();
+					renderCalendar();	
+            } else {
+                alert('Failed: ' + result.message);
+            }
+        } catch (err) {
+            alert('Server error saving booking.');
+        }
+    };
+
+    function changeMonth(step) {
+        currentDate.setMonth(currentDate.getMonth() + step);
+        renderCalendar();
+    }
+
+    function closeModal() {
+        document.getElementById('dateModal').classList.add('hidden');
+        document.getElementById('bookingForm').reset();
+    }
+
+    if(roomId) renderCalendar();
+</script>
+</body>
+</html>

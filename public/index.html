@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>mrBook ZTE BTS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .calendar-box { min-height: 100px; transition: all 0.2s; }
+        .room-path:hover { fill: #dbeafe; stroke: #2563eb; cursor: pointer; }
+        .room-text { pointer-events: none; font-weight: 800; fill: #1e293b; }
+    </style>
+</head>
+<body class="bg-slate-100 p-4 md:p-8">
+
+<div class="max-w-md mx-auto"> <!-- Constrained width for mobile focus -->
+    <header class="mb-4 text-center">
+        <img src="zte_logo.png" alt="Logo" class="mx-auto mb-4 h-16 w-auto object-contain">
+		<h1 class="text-2xl font-black text-slate-800">UM BTS Office</h1>
+		<h1 class="text-2xl font-bold text-blue-600">Meeting Room Reservation System</h1>
+    </header>
+
+    <!-- Floor Plan Container -->
+    <div class="bg-white p-2 rounded-xl shadow-lg border-2 border-slate-800">
+        <svg viewBox="0 0 400 400" class="w-full h-auto">
+            <style>
+                .room-box { fill: white; stroke: black; stroke-width: 2; cursor: pointer; transition: 0.2s; }
+                .room-box:hover { fill: #eff6ff; }
+                .label { font-size: 14px; font-weight: 800; pointer-events: none; text-anchor: middle; }
+            </style>
+
+            <!-- Foyer Wall (Left) -->
+            <rect x="10" y="10" width="60" height="380" fill="#f8fafc" stroke="black" stroke-width="2" />
+            <text x="40" y="200" transform="rotate(-90 40,200)" class="label opacity-20 text-xl">FOYER</text>
+
+            <!-- War Room 1 (Top - Stacked) -->
+			<g onclick="goToRoom(4)">
+				<rect x="70" y="10" width="320" height="100" class="room-box" />
+				<text x="230" y="65" class="label">WAR ROOM 1</text>
+			</g>
+
+            <!-- MR 2 (Middle Left - Stacked) -->
+			<g onclick="goToRoom(2)">
+				<rect x="70" y="110" width="160" height="130" class="room-box" />
+				<text x="150" y="180" class="label">MR 2</text>
+			</g>
+
+            <!-- MR 3 (Middle Right - Stacked) -->
+			<g onclick="goToRoom(3)">
+				<rect x="230" y="110" width="160" height="130" class="room-box" />
+				<text x="310" y="180" class="label">MR 3</text>
+			</g>
+
+            <!-- Hallway/Space (Stacked) -->
+            <rect x="70" y="240" width="320" height="40" fill="#f1f5f9" stroke="black" stroke-width="2" />
+
+            <!-- MR 1 (Bottom Left - Stacked) -->
+			<g onclick="goToRoom(1)">
+				<rect x="70" y="280" width="160" height="110" class="room-box" />
+				<text x="150" y="340" class="label">MR 1</text>
+			</g>
+
+            <!-- Empty Space (Bottom Right - Stacked) -->
+            <rect x="230" y="280" width="160" height="110" fill="white" stroke="black" stroke-width="2" />
+            <line x1="230" y1="280" x2="390" y2="390" stroke="black" stroke-width="1" />
+            <line x1="390" y1="280" x2="230" y2="390" stroke="black" stroke-width="1" />
+        </svg>
+    </div>
+</div>
+
+	
+<script>
+    // Clean and simple redirection logic
+    function goToRoom(roomId) {
+        // Redirects user to the specific room page
+        window.location.href = `room.html?id=${roomId}`;
+    }
+</script>
+
+
+</body>
+</html>
