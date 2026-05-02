@@ -67,22 +67,28 @@ app.delete('/api/admin/rooms/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-
-
-
-
-
-
 app.get('/api/rooms', async (req, res) => {
     try { res.json(await BookingService.getRooms()); } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 app.post('/api/bookings', async (req, res) => {
+    const { room_id, user_name, start_time, end_time } = req.body;
+
+    // BACK-END BLOCKER: Prevent reversed time logic
+    if (new Date(start_time) >= new Date(end_time)) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Start time must be before end time.' 
+        });
+    }
+
     try {
-        const { room_id, user_name, start_time, end_time } = req.body;
-        const result = await BookingService.reserve(room_id, user_name, start_time, end_time);
-        res.json(result);
-    } catch (err) { res.status(500).json({ success: false, message: err.message }); }
+        // Proceed with your existing overlap check and saving
+        const result = await bookingService.addBooking(room_id, user_name, start_time, end_time);
+        res.json({ success: true, id: result });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
 });
 
 app.get('/api/bookings/daily', async (req, res) => {
