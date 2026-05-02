@@ -1,15 +1,26 @@
-const path = require('path');
-const sqlite3 = require('sqlite3').verbose();
+import path from 'path';
+import sqlite3 from 'sqlite3';
+import { fileURLToPath } from 'url';
 
-// Logic: Use the /data folder on Railway, or models folder on your laptop
+// These lines are needed to replace __dirname in ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const sqlite = sqlite3.verbose();
+
+// Use /data/database.sqlite on Railway, or local models folder on your laptop
 const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
     ? path.join('/data', 'database.sqlite') 
     : path.join(__dirname, 'database.sqlite');
 
-const db = new sqlite3.Database(dbPath, (err) => {
-    if (err) console.error("Database opening error:", err.message);
-    else console.log("Connected to SQLite database.");
+const db = new sqlite.Database(dbPath, (err) => {
+    if (err) {
+        console.error('Database connection error:', err.message);
+    } else {
+        console.log('Connected to SQLite database at:', dbPath);
+    }
 });
+
 
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS rooms (
