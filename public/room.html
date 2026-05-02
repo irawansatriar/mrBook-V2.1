@@ -268,7 +268,16 @@ async function openDateDetail(dateStr) {
 
     document.getElementById('bookingForm').onsubmit = async (e) => {
         e.preventDefault();
-        
+
+		const startTime = document.getElementById('startTime').value;
+		const endTime = document.getElementById('endTime').value;
+
+		// BLOCKER: Check if End Time is before or equal to Start Time
+		if (startTime >= endTime) {
+			alert('Invalid Time: The End Time must be later than the Start Time.');
+			return; // Stop the submission here
+		}
+		
         const payload = {
             room_id: parseInt(roomId),
             user_name: document.getElementById('userName').value,
