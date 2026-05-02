@@ -24,7 +24,7 @@ class BookingService {
     }
 
     // KEEP: Required for the new room.html calendar[cite: 2]
-    static async getDaily(roomId, date) {
+   /* static async getDaily(roomId, date) {
         return new Promise((resolve, reject) => {
             const sql = `SELECT id, user_name, start_time, end_time FROM bookings 
                          WHERE room_id = ? AND start_time LIKE ? ORDER BY start_time ASC`;
@@ -33,7 +33,25 @@ class BookingService {
                 resolve(rows || []);
             });
         });
-    }
+    } */
+
+
+	// Add this to your BookingService class
+	async getMonthlyBookings(room_id, year, month) {
+	    const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+	    const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
+	    
+	    return new Promise((resolve, reject) => {
+	        this.db.all(
+	            `SELECT * FROM bookings WHERE room_id = ? AND date BETWEEN ? AND ?`,
+	            [room_id, startDate, endDate],
+	            (err, rows) => {
+	                if (err) reject(err);
+	                else resolve(rows);
+	            }
+	        );
+	    });
+	}
 
 	static async getRooms() {
         return new Promise((res, rej) => {
