@@ -110,7 +110,7 @@ if(roomId) {
 
 
 
-    async function renderCalendar() {
+ /*   async function renderCalendar() {
         const grid = document.getElementById('calendarGrid');
         const monthLabel = document.getElementById('currentMonthYear');
         if(!grid || !roomId) return;
@@ -149,7 +149,73 @@ if(roomId) {
             cell.onclick = () => openDateDetail(dateStr);
             grid.appendChild(cell);
         }
+    }  */
+
+
+
+async function renderCalendar() {
+    const grid = document.getElementById('calendarGrid');
+    const monthLabel = document.getElementById('currentMonthYear');
+    if (!grid || !roomId) return;
+
+    // 1. Setup Month/Year
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const monthNames = ["January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"];
+    monthLabel.innerText = `${monthNames[month]} ${year}`;
+
+    // 2. Clear grid and show a single loader
+    grid.innerHTML = '<div class="col-span-7 text-center py-10 text-slate-400 text-sm">Loading calendar...</div>';
+
+    // 3. Prepare all the data requests AT ONCE (Parallel)
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const fetchPromises = [];
+
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        // We create the promise but don't "await" it yet
+        fetchPromises.push(
+            fetch(`/api/bookings/daily?room_id=${roomId}&date=${dateStr}`)
+                .then(res => res.json())
+                .then(bookings => ({ day, dateStr, bookings }))
+        );
     }
+
+    try {
+        // 4. Wait for all 31 requests to finish together
+        const allDaysData = await Promise.all(fetchPromises);
+
+        // 5. Build the entire HTML string first (One big container)
+        let htmlBuffer = '';
+
+        // Add Empty Slots
+        let firstDay = new Date(year, month, 1).getDay();
+        let emptySlots = firstDay === 0 ? 6 : firstDay - 1;
+        for (let i = 0; i < emptySlots; i++) {
+            htmlBuffer += `<div class="aspect-square bg-slate-50/50 border border-slate-100 rounded-lg"></div>`;
+        }
+
+        // Add the Actual Days
+        allDaysData.forEach(({ day, dateStr, bookings }) => {
+            const hasBookings = bookings.length > 0;
+            htmlBuffer += `
+                <button onclick="openDateDetail('${dateStr}')" 
+                        class="aspect-square bg-white border border-slate-100 flex flex-col items-center justify-center rounded-lg shadow-sm hover:bg-blue-50 transition-colors relative">
+                    <span class="text-sm font-semibold ${hasBookings ? 'text-blue-600' : 'text-slate-700'}">${day}</span>
+                    ${hasBookings ? `<div class="absolute bottom-1 w-1.5 h-1.5 bg-blue-500 rounded-full"></div>` : ''}
+                </button>
+            `;
+        });
+
+        // 6. Push the entire "grid" to the DOM in one single update
+        grid.innerHTML = htmlBuffer;
+
+    } catch (err) {
+        grid.innerHTML = '<div class="col-span-7 text-center text-red-500">Error loading calendar.</div>';
+        console.error(err);
+    }
+}
 
 async function openDateDetail(dateStr) {
     selectedDateStr = dateStr;
