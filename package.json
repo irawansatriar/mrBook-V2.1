@@ -2,6 +2,7 @@
   "name": "mrBook-V2.0",
   "version": "1.0.0",
   "start": "node server.js",
+  "install": "npm rebuild sqlite3",
   "main": "index.js",
 
   "scripts": {
