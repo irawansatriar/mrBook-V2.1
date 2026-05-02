@@ -6,7 +6,7 @@ const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
     ? path.join('/data', 'database.sqlite') 
     : path.join(__dirname, 'database.sqlite');
 
-const db = new sqlite3.Database(dbPath), (err) => {
+const db = new sqlite3.Database(dbPath, (err) => {
     if (err) console.error("Database opening error:", err.message);
     else console.log("Connected to SQLite database.");
 });
