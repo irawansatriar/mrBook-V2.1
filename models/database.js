@@ -1,6 +1,14 @@
 import sqlite3 from 'sqlite3';
 
-const db = new sqlite3.Database('./reservations.db', (err) => {
+const path = require('path');
+const sqlite3 = require('sqlite3').verbose();
+
+// Logic: Use the /data folder on Railway, or models folder on your laptop
+const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
+    ? path.join('/data', 'database.sqlite') 
+    : path.join(__dirname, 'database.sqlite');
+
+const db = new sqlite3.Database(dbPath), (err) => {
     if (err) console.error("Database opening error:", err.message);
     else console.log("Connected to SQLite database.");
 });
