@@ -67,22 +67,7 @@ app.delete('/api/admin/rooms/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// Add this route to your server.js
-app.get('/api/bookings', async (req, res) => {
-    try {
-        const { room_id } = req.query;
-        if (!room_id) {
-            return res.status(400).json({ error: 'room_id is required' });
-        }
 
-        // Fetch all bookings for this room from the database
-        const bookings = await bookingService.getAllByRoom(room_id); 
-        res.json(bookings);
-    } catch (err) {
-        console.error("Server error fetching bookings:", err);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-});
 
 
 
