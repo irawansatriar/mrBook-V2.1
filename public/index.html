@@ -66,6 +66,31 @@
             <line x1="390" y1="280" x2="230" y2="390" stroke="black" stroke-width="1" />
         </svg>
     </div>
+
+	<div class="max-w-md mx-auto p-4 text-center">
+    <button id="insightBtn" onclick="generateLLMInsights()" 
+        class="bg-gradient-to-r from-orange-600 to-teal-600 text-white font-black py-3 px-8 squared-full shadow-lg hover:scale-105 transition-transform">
+        <i class="fa-solid fa-sparkles mr-2"></i> Insights !
+    </button>
+    
+    <!-- Result Container -->
+	<div id="llmResponse" class="mt-6 hidden">
+		<!-- max-w-md and mx-auto ensure the blue box itself is centered on the page -->
+		<div class="max-w-md mx-auto bg-blue-50 border border-blue-100 p-6 rounded-2xl relative shadow-sm">
+			
+			<!-- Badge centered: -top-3 and left-1/2 with -translate-x-1/2 keeps it perfectly middle -->
+			<div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-[10px] text-white px-3 py-1 rounded-full font-bold uppercase tracking-wider whitespace-nowrap">
+				AI Assistant
+			</div>
+			
+			<!-- text-center makes the LLM insight text align to the middle -->
+			<p id="insightText" class="text-sm text-slate-700 leading-relaxed italic text-center pt-2"></p>
+			
+		</div>
+	</div>
+
+	</div>
+	
 </div>
 
 	
@@ -75,6 +100,29 @@
         // Redirects user to the specific room page
         window.location.href = `room.html?id=${roomId}`;
     }
+
+	async function generateLLMInsights() {
+	    const btn = document.getElementById('insightBtn');
+	    const responseDiv = document.getElementById('llmResponse');
+	    const textPara = document.getElementById('insightText');
+	
+	    btn.disabled = true;
+	    btn.innerText = "Analyzing...";
+	    
+	    try {
+	        const res = await fetch('/api/ai-insights');
+	        const data = await res.json();
+	        
+	        responseDiv.classList.remove('hidden');
+	        textPara.innerText = data.analysis;
+	    } catch (err) {
+	        textPara.innerText = "Error connecting to AI service.";
+	    } finally {
+	        btn.disabled = false;
+	        btn.innerText = "Insights !";
+	    }
+	}
+	
 </script>
 
 
