@@ -86,5 +86,64 @@ app.get('/api/bookings/daily', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+app.get('/api/ai-insights', async (req, res) => {
+    try {
+        const rooms = await BookingService.getRooms();
+        const now = new Date();
+        
+        // Helper to format dates YYYY-MM-DD
+        const fmt = (d) => d.toISOString().split('T')[0];
+
+        // Define our windows
+        const today = fmt(now);
+        
+        // Get end of "This Week" (7 days from now)
+        const endOfThisWeek = new Date();
+        endOfThisWeek.setDate(now.getDate() + 7);
+        
+        // Get end of "Next Week" (14 days from now)
+        const endOfNextWeek = new Date();
+        endOfNextWeek.setDate(now.getDate() + 14);
+
+        let context = `Current Date/Time: ${today} ${now.getHours()}:${now.getMinutes()}\n\n`;
+
+        for (const room of rooms) {
+            // 1. Fetch Today
+            const todayB = await BookingService.getDaily(room.id, today);
+            
+            // 2. Fetch Weekly Range (You might need to adjust your service to accept start/end)
+            // If getWeekly only does current week, we simulate the logic here:
+            const allBookings = await BookingService.getAll();
+            const roomBookings = allBookings.filter(b => b.room_id === room.id);
+
+            const thisWeek = roomBookings.filter(b => b.date >= today && b.date <= fmt(endOfThisWeek));
+            const nextWeek = roomBookings.filter(b => b.date > fmt(endOfThisWeek) && b.date <= fmt(endOfNextWeek));
+
+            context += `ROOM: ${room.name}\n`;
+            context += `- TODAY: ${todayB.length} bookings.\n`;
+            context += `- THIS WEEK: ${thisWeek.length} bookings.\n`;
+            context += `- NEXT WEEK: ${nextWeek.length} bookings.\n\n`;
+        }
+
+        const model = genAI.getGenerativeModel({ model: "gemma-3-1b-it" });
+        const prompt = `As an office coordinator, provide a 3-part summary based on this data:
+        1. IMMEDIATE: What's free now?
+        2. WEEKLY: Best day for a long meeting this week?
+        3. NEXT WEEK: General outlook.
+        Keep it professional and under 60 words.\n\nData:\n${context}`;
+
+        const result = await model.generateContent(prompt);
+        res.json({ analysis: result.response.text() });
+
+    } catch (err) {
+        console.error("Expansion Error:", err);
+        res.status(500).json({ analysis: "Error expanding insights. Check if getAll() is supported." });
+    }
+});
+
+
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Live at http://localhost:${PORT}`));
