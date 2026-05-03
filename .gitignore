@@ -1,2 +1,17 @@
+# API Keys and Secrets
+.env
+
+# Dependencies
 node_modules/
+
+# Local Databases (Actual Data)
 *.sqlite
+*.sqlite3
+*.db
+
+# OS Metadata
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
