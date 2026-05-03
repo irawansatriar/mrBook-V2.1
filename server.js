@@ -1,9 +1,12 @@
+import 'dotenv/config'; // Loads your GOOGLE_API_KEY
+import { GoogleGenerativeAI } from "@google/generative-ai"; // Fixes the ReferenceError
+
 import express from 'express';
 import BookingService from './services/BookingService.js';
 
-
 const app = express();
 const ADMIN_PASSWORD = "admin123";
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -85,8 +88,6 @@ app.get('/api/bookings/daily', async (req, res) => {
         res.json(await BookingService.getDaily(room_id, date));
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 app.get('/api/ai-insights', async (req, res) => {
     try {
