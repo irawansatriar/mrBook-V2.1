@@ -92,59 +92,69 @@ app.get('/api/bookings/daily', async (req, res) => {
 app.get('/api/ai-insights', async (req, res) => {
     try {
         const rooms = await BookingService.getRooms();
+        const allBookings = await BookingService.getAll(); // Assuming this fetches all data
         const now = new Date();
-        
-        // Helper to format dates YYYY-MM-DD
-        const fmt = (d) => d.toISOString().split('T')[0];
+        const todayStr = now.toISOString().split('T')[0];
+        const currentTime = now.getHours().toString().padStart(2, '0') + ":00";
 
-        // Define our windows
-        const today = fmt(now);
-        
-        // Get end of "This Week" (7 days from now)
-        const endOfThisWeek = new Date();
-        endOfThisWeek.setDate(now.getDate() + 7);
-        
-        // Get end of "Next Week" (14 days from now)
-        const endOfNextWeek = new Date();
-        endOfNextWeek.setDate(now.getDate() + 14);
+        // --- PRE-PROCESS DATA ---
+        let roomStats = {};
+        let userCounts = {};
 
-        let context = `Current Date/Time: ${today} ${now.getHours()}:${now.getMinutes()}\n\n`;
-
-        for (const room of rooms) {
-            // 1. Fetch Today
-            const todayB = await BookingService.getDaily(room.id, today);
+        rooms.forEach(room => {
+            const bookings = allBookings.filter(b => b.room_id === room.id);
             
-            // 2. Fetch Weekly Range (You might need to adjust your service to accept start/end)
-            // If getWeekly only does current week, we simulate the logic here:
-            const allBookings = await BookingService.getAll();
-            const roomBookings = allBookings.filter(b => b.room_id === room.id);
+            // 1. Check Today's earliest availability
+            const todayB = bookings.filter(b => b.date === todayStr);
+            // Logic: Is it free now? (Simplification for the LLM)
+            const isFreeNow = !todayB.some(b => currentTime >= b.start_time.split('T')[1] && currentTime < b.end_time.split('T')[1]);
 
-            const thisWeek = roomBookings.filter(b => b.date >= today && b.date <= fmt(endOfThisWeek));
-            const nextWeek = roomBookings.filter(b => b.date > fmt(endOfThisWeek) && b.date <= fmt(endOfNextWeek));
+            // 2. Weekly/Next Week Density
+            const thisWeekB = bookings.filter(b => b.date >= todayStr); 
+            
+            roomStats[room.name] = {
+                isFreeNow,
+                totalBookings: thisWeekB.length,
+                bookings: todayB.map(b => `${b.start_time.split('T')[1]}-${b.end_time.split('T')[1]}`)
+            };
 
-            context += `ROOM: ${room.name}\n`;
-            context += `- TODAY: ${todayB.length} bookings.\n`;
-            context += `- THIS WEEK: ${thisWeek.length} bookings.\n`;
-            context += `- NEXT WEEK: ${nextWeek.length} bookings.\n\n`;
-        }
+            // 3. Track Users
+            thisWeekB.forEach(b => {
+                userCounts[b.user_name] = (userCounts[b.user_name] || 0) + 1;
+            });
+			
+			
+			
+        });
+
+        // Identify most frequent user
+        const topUser = Object.entries(userCounts).sort((a, b) => b[1] - a[1])[0] || ["None", 0];
+
+        // --- CONSTRUCT THE PROMPT ---
+        const prompt = `
+        System: You are the ZTE Office Coordinator.
+        Current Time: ${currentTime}
+        
+        Data:
+        ${JSON.stringify(roomStats)}
+        Top User This Week: ${topUser[0]} with ${topUser[1]} bookings.
+
+        Task: Provide a 3-point brief:
+        1. Earliest Availability: Which room is free NOW? (Refer to isFreeNow)
+        2. Booking Strategy: Which room has the fewest bookings this week/next week for easy scheduling?
+        3. Activity: Mention the most frequent user.
+        
+        Rules: Be concise. Use professional language for a 5G project team.`;
 
         const model = genAI.getGenerativeModel({ model: "gemma-3-1b-it" });
-        const prompt = `As an office coordinator, provide a 3-part summary based on this data:
-        1. IMMEDIATE: What's free now?
-        2. WEEKLY: Best day for a long meeting this week?
-        3. NEXT WEEK: General outlook.
-        Keep it professional and under 60 words.\n\nData:\n${context}`;
-
         const result = await model.generateContent(prompt);
         res.json({ analysis: result.response.text() });
 
     } catch (err) {
-        console.error("Expansion Error:", err);
-        res.status(500).json({ analysis: "Error expanding insights. Check if getAll() is supported." });
+        console.error(err);
+        res.status(500).json({ analysis: "Accuracy check failed. Ensure data points are valid." });
     }
 });
-
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Live at http://localhost:${PORT}`));
