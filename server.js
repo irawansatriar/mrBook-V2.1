@@ -144,7 +144,7 @@ app.get('/api/ai-insights', async (req, res) => {
         2. Booking Strategy: Which room has the fewest bookings this week/next week for easy scheduling?
         3. Activity: Mention the most frequent user.
         
-        Rules: brief & professional
+        Rules: brief & professional.';
 
         const model = genAI.getGenerativeModel({ model: "gemma-4-26b-a4b-it" });
         const result = await model.generateContent(prompt);
