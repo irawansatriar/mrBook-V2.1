@@ -1,12 +1,13 @@
-import 'dotenv/config'; // Loads your GOOGLE_API_KEY
-import { GoogleGenerativeAI } from "@google/generative-ai"; // Fixes the ReferenceError
-
+import 'dotenv/config';
+import { GoogleGenerativeAI } from "@google/generative-ai";
+console.log("DEBUG: Key exists?", !!process.env.GOOGLE_API_KEY);
+console.log("DEBUG: Key starts with:", process.env.GOOGLE_API_KEY?.substring(0, 7));
 import express from 'express';
 import BookingService from './services/BookingService.js';
 
+
 const app = express();
 const ADMIN_PASSWORD = "admin123";
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 app.use(express.json());
 app.use(express.static('public'));
@@ -70,6 +71,8 @@ app.delete('/api/admin/rooms/:id', async (req, res) => {
     } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+
+
 app.get('/api/rooms', async (req, res) => {
     try { res.json(await BookingService.getRooms()); } catch (e) { res.status(500).json({ error: e.message }); }
 });
@@ -82,12 +85,35 @@ app.post('/api/bookings', async (req, res) => {
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
 
+/*app.post('/api/bookings', async (req, res) => {
+    const { room_id, user_name, start_time, end_time } = req.body;
+
+    // BACK-END BLOCKER: Prevent reversed time logic
+    if (new Date(start_time) >= new Date(end_time)) {
+        return res.status(400).json({ 
+            success: false, 
+            message: 'Start time must be before end time.' 
+        });
+    }
+
+    try {
+        // Proceed with your existing overlap check and saving
+        const result = await bookingService.addBooking(room_id, user_name, start_time, end_time);
+        res.json({ success: true, id: result });
+    } catch (err) {
+        res.status(400).json({ success: false, message: err.message });
+    }
+});*/
+
 app.get('/api/bookings/daily', async (req, res) => {
     try {
         const { room_id, date } = req.query;
         res.json(await BookingService.getDaily(room_id, date));
     } catch (err) { res.status(500).json({ success: false, message: err.message }); }
 });
+
+
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
 app.get('/api/ai-insights', async (req, res) => {
     try {
@@ -144,7 +170,7 @@ app.get('/api/ai-insights', async (req, res) => {
         2. Booking Strategy: Which room has the fewest bookings this week/next week for easy scheduling?
         3. Activity: Mention the most frequent user.
         
-        Rules: Brief and professional.';
+        Rules: Be concise. Use professional language for a 5G project team.`;
 
         const model = genAI.getGenerativeModel({ model: "gemma-4-26b-a4b-it" });
         const result = await model.generateContent(prompt);
@@ -155,6 +181,7 @@ app.get('/api/ai-insights', async (req, res) => {
         res.status(500).json({ analysis: "Accuracy check failed. Ensure data points are valid." });
     }
 });
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, '0.0.0.0', () => console.log(`🚀 Live at http://localhost:${PORT}`));
