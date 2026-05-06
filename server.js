@@ -146,7 +146,7 @@ app.get('/api/ai-insights', async (req, res) => {
         
         Rules: Be concise. Use professional language for a 5G project team.`;
 
-        const model = genAI.getGenerativeModel({ model: "gemma-3-1b-it" });
+        const model = genAI.getGenerativeModel({ model: "gemma-4-26b-it" });
         const result = await model.generateContent(prompt);
         res.json({ analysis: result.response.text() });
 
