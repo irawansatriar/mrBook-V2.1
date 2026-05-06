@@ -170,7 +170,7 @@ app.get('/api/ai-insights', async (req, res) => {
         2. Booking Strategy: Which room has the fewest bookings this week/next week for easy scheduling?
         3. Activity: Mention the most frequent user.
         
-        Rules: Be concise. Use professional language for a 5G project team.`;
+        Rules: Be concise. Straight to the point.`;
 
         const model = genAI.getGenerativeModel({ model: "gemma-4-26b-a4b-it" });
         const result = await model.generateContent(prompt);
